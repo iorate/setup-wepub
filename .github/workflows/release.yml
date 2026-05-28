@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Install git-cliff
+        uses: taiki-e/install-action@13608cbb45b01feb47ef444ab1a42dc41ad56f1a # v2.79.11
+        with:
+          tool: git-cliff
+
+      - name: Determine next version
+        id: next-version
+        run: |
+          next_tag=$(git-cliff --bumped-version)
+          if [[ -n "$(git tag -l "$next_tag")" ]]; then
+            echo "::error::No version bump since the latest release $next_tag" >&2
+            exit 1
+          fi
+          echo "tag=$next_tag" >> "$GITHUB_OUTPUT"
+
+      - name: Generate release notes
+        run: git-cliff --tag "$TAG" --unreleased > "$RUNNER_TEMP/release-notes.md"
+        env:
+          TAG: ${{ steps.next-version.outputs.tag }}
+
+      - name: Create GitHub Release
+        run: |
+          gh release create "$TAG" \
+            --target "$GITHUB_SHA" \
+            --title "$TAG" \
+            --notes-file "$RUNNER_TEMP/release-notes.md"
+        env:
+          TAG: ${{ steps.next-version.outputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Update major version tag
+        run: |
+          major_tag="${TAG%%.*}"
+          git tag --force "$major_tag" "$GITHUB_SHA"
+          git push --force \
+            "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            "refs/tags/$major_tag"
+        env:
+          TAG: ${{ steps.next-version.outputs.tag }}
+          GH_TOKEN: ${{ github.token }}
