@@ -31,12 +31,13 @@ jobs:
       - name: Determine next version
         id: next-version
         run: |
-          next_tag=$(git-cliff --bumped-version)
-          if [[ -n "$(git tag -l "$next_tag")" ]]; then
-            echo "::error::No version bump since the latest release $next_tag" >&2
+          context=$(git-cliff --unreleased --bump --context)
+          if ! jq -e '.[0].bump_type' <<<"$context" >/dev/null; then
+            echo "::error::No version bump since the latest release" >&2
             exit 1
           fi
-          echo "tag=$next_tag" >> "$GITHUB_OUTPUT"
+          tag=$(jq -r '.[0].version' <<<"$context")
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
 
       - name: Generate release notes
         run: git-cliff --tag "$TAG" --unreleased > "$RUNNER_TEMP/release-notes.md"
@@ -57,9 +58,7 @@ jobs:
         run: |
           major_tag="${TAG%%.*}"
           git tag --force "$major_tag" "$GITHUB_SHA"
-          git push --force \
-            "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
-            "refs/tags/$major_tag"
+          git -c credential.helper='!gh auth git-credential' push --force "refs/tags/$major_tag"
         env:
           TAG: ${{ steps.next-version.outputs.tag }}
           GH_TOKEN: ${{ github.token }}
