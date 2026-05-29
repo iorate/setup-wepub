@@ -48,3 +48,107 @@ jobs:
 
       - name: Run zizmor
         uses: zizmorcore/zizmor-action@5f14fd08f7cf1cb1609c1e344975f152c7ee938d # v0.5.6
+
+  platforms:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-24.04      # x86_64-unknown-linux-gnu
+          - ubuntu-24.04-arm  # aarch64-unknown-linux-gnu
+          - macos-26-intel    # x86_64-apple-darwin
+          - macos-26          # aarch64-apple-darwin
+          - windows-2025      # x86_64-pc-windows-msvc
+
+    runs-on: ${{ matrix.os }}
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Install wepub
+        id: install
+        uses: ./
+        with:
+          version: 0.4.3
+
+      - name: Verify install and output
+        run: |
+          wepub --version
+          if [[ $INSTALLED_VERSION != "0.4.3" ]]; then
+            echo "unexpected output: $INSTALLED_VERSION"
+            exit 1
+          fi
+        env:
+          INSTALLED_VERSION: ${{ steps.install.outputs.version }}
+
+      - name: Re-run to exercise cache hit
+        uses: ./
+        with:
+          version: 0.4.3
+
+  version-inputs:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Install the latest version
+        id: latest
+        uses: ./
+        with:
+          version: latest
+
+      - name: Install an exact version
+        id: exact
+        uses: ./
+        with:
+          version: 0.4.3
+
+      - name: Install a v-prefixed version
+        id: vprefix
+        uses: ./
+        with:
+          version: v0.4.3
+
+      - name: Check version resolution
+        run: |
+          wepub --version
+          if [[ "$EXACT_VERSION" != "0.4.3" ]]; then
+            echo "exact form failed"
+            exit 1
+          fi
+          if [[ "$VPREFIX_VERSION" != "0.4.3" ]]; then
+            echo "v-prefix form failed"
+            exit 1
+          fi
+        env:
+          EXACT_VERSION: ${{ steps.exact.outputs.version }}
+          VPREFIX_VERSION: ${{ steps.vprefix.outputs.version }}
+
+      - name: Install an invalid version
+        id: invalid
+        uses: ./
+        with:
+          version: not-a-version
+        continue-on-error: true
+
+      - name: Assert an invalid version fails
+        run: |
+          if [[ "$INVALID_OUTCOME" != "failure" ]]; then
+            echo "expected failure, got '$INVALID_OUTCOME'"
+            exit 1
+          fi
+        env:
+          INVALID_OUTCOME: ${{ steps.invalid.outcome }}
