@@ -38,27 +38,25 @@ fi
 # Download archive and checksum
 archive="wepub-$target$archive_ext"
 base_url="https://github.com/iorate/wepub/releases/download/v$version"
-tmpdir=$(mktemp -d)
-trap 'rm -rf "$tmpdir"' EXIT
 echo "Downloading $base_url/$archive"
-curl -fsSL "$base_url/$archive" -o "$tmpdir/$archive"
-curl -fsSL "$base_url/$archive.sha256" -o "$tmpdir/$archive.sha256"
+curl -fsSL "$base_url/$archive" -o "$RUNNER_TEMP/$archive"
+curl -fsSL "$base_url/$archive.sha256" -o "$RUNNER_TEMP/$archive.sha256"
 
 # Verify checksum
 if command -v sha256sum &>/dev/null; then
-  (cd "$tmpdir" && sha256sum -c "$archive.sha256")
+  (cd "$RUNNER_TEMP" && sha256sum -c "$archive.sha256")
 else
-  (cd "$tmpdir" && shasum -a 256 -c "$archive.sha256")
+  (cd "$RUNNER_TEMP" && shasum -a 256 -c "$archive.sha256")
 fi
 
 # Extract binary into tool cache
 mkdir -p "$tool_dir"
 if [[ "$archive_ext" == ".tar.xz" ]]; then
   # Tarballs nest the binary under a wepub-$target/ directory.
-  tar -xJf "$tmpdir/$archive" --strip-components=1 -C "$tool_dir" "wepub-$target/wepub$binary_ext"
+  tar -xJf "$RUNNER_TEMP/$archive" -C "$tool_dir" --strip-components=1 "wepub-$target/wepub$binary_ext"
 else
   # The zip places the binary at the archive root.
-  unzip -q "$tmpdir/$archive" "wepub$binary_ext" -d "$tool_dir"
+  unzip -q "$RUNNER_TEMP/$archive" "wepub$binary_ext" -d "$tool_dir"
 fi
 
 echo "$tool_dir" >> "$GITHUB_PATH"
