@@ -12,12 +12,25 @@ defaults:
   run:
     shell: bash
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  actionlint-shellcheck:
+  shellcheck:
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Run shellcheck
+        run: shellcheck install.sh
+
+  actionlint:
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
@@ -30,14 +43,10 @@ jobs:
         with:
           args: -color
 
-      - name: shellcheck
-        run: shellcheck install.sh
-
   zizmor:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: read
       security-events: write
 
     steps:
@@ -61,9 +70,6 @@ jobs:
           - windows-2025      # x86_64-pc-windows-msvc
 
     runs-on: ${{ matrix.os }}
-
-    permissions:
-      contents: read
 
     steps:
       - name: Checkout
@@ -94,9 +100,6 @@ jobs:
 
   version-inputs:
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: read
 
     steps:
       - name: Checkout
@@ -137,12 +140,24 @@ jobs:
           EXACT_VERSION: ${{ steps.exact.outputs.version }}
           VPREFIX_VERSION: ${{ steps.vprefix.outputs.version }}
 
+      - name: Disable workflow commands
+        id: disable-commands
+        run: |
+          token=$(uuidgen)
+          echo "::stop-commands::$token"
+          echo "token=$token" >> "$GITHUB_OUTPUT"
+
       - name: Install an invalid version
         id: invalid
         uses: ./
         with:
           version: not-a-version
         continue-on-error: true
+
+      - name: Re-enable workflow commands
+        run: echo "::$TOKEN::"
+        env:
+          TOKEN: ${{ steps.disable-commands.outputs.token }}
 
       - name: Assert an invalid version fails
         run: |

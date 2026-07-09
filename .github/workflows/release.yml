@@ -9,12 +9,12 @@ defaults:
   run:
     shell: bash
 
+concurrency:
+  group: ${{ github.workflow }}
+
 jobs:
   release:
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout
@@ -37,12 +37,18 @@ jobs:
             exit 1
           fi
           tag=$(jq -r '.[0].version' <<<"$context")
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "TAG=$tag" >> "$GITHUB_ENV"
 
       - name: Generate release notes
         run: git-cliff --tag "$TAG" --unreleased > "$RUNNER_TEMP/release-notes.md"
-        env:
-          TAG: ${{ steps.next-version.outputs.tag }}
+
+      - name: Generate token
+        id: generate-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.BOT_CLIENT_ID }}
+          private-key: ${{ secrets.BOT_PRIVATE_KEY }}
+          permission-contents: write
 
       - name: Create GitHub Release
         run: |
@@ -51,14 +57,14 @@ jobs:
             --title "$TAG" \
             --notes-file "$RUNNER_TEMP/release-notes.md"
         env:
-          TAG: ${{ steps.next-version.outputs.tag }}
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
 
       - name: Update major version tag
         run: |
           major_tag="${TAG%%.*}"
           git tag --force "$major_tag" "$GITHUB_SHA"
-          git -c credential.helper='!gh auth git-credential' push --force "refs/tags/$major_tag"
+          git -c credential.helper= \
+              -c credential.helper='!gh auth git-credential' \
+              push --force origin "$major_tag"
         env:
-          TAG: ${{ steps.next-version.outputs.tag }}
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
