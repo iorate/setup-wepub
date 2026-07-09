@@ -1,0 +1,11 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:best-practices", "group:allNonMajor"],
+  "enabledManagers": ["github-actions"],
+  "dependencyDashboardApproval": true,
+  "vulnerabilityAlerts": {
+    "dependencyDashboardApproval": false
+  },
+  "minimumReleaseAge": "3 days",
+  "platformCommit": "enabled"
+}
