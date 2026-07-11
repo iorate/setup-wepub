@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:best-practices", "group:allNonMajor"],
+  "extends": ["config:best-practices", "group:allNonMajor", ":automergeMinor"],
   "enabledManagers": ["github-actions"],
   "minimumReleaseAge": "3 days",
   "platformCommit": "enabled",
