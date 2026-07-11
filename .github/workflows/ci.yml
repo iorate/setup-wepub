@@ -140,30 +140,13 @@ jobs:
           EXACT_VERSION: ${{ steps.exact.outputs.version }}
           VPREFIX_VERSION: ${{ steps.vprefix.outputs.version }}
 
-      - name: Disable workflow commands
-        id: disable-commands
+      - name: Assert an invalid version fails
         run: |
           token=$(uuidgen)
           echo "::stop-commands::$token"
-          echo "token=$token" >> "$GITHUB_OUTPUT"
-
-      - name: Install an invalid version
-        id: invalid
-        uses: ./
-        with:
-          version: not-a-version
-        continue-on-error: true
-
-      - name: Re-enable workflow commands
-        run: echo "::$TOKEN::"
-        env:
-          TOKEN: ${{ steps.disable-commands.outputs.token }}
-
-      - name: Assert an invalid version fails
-        run: |
-          if [[ "$INVALID_OUTCOME" != "failure" ]]; then
-            echo "expected failure, got '$INVALID_OUTCOME'"
+          if bash install.sh; then
+            echo "expected failure"
             exit 1
           fi
         env:
-          INVALID_OUTCOME: ${{ steps.invalid.outcome }}
+          INPUT_VERSION: not-a-version
