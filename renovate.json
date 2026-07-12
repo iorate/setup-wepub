@@ -2,9 +2,12 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:best-practices", "group:allNonMajor", ":automergeMinor"],
   "enabledManagers": ["github-actions"],
-  "minimumReleaseAge": "3 days",
-  "platformCommit": "enabled",
+  "schedule": ["* * * * 5"],
+  "prHourlyLimit": 0,
+  "prConcurrentLimit": 0,
   "lockFileMaintenance": {
-    "schedule": ["* * L * *"]
-  }
+    "schedule": ["* * * * 0#L"]
+  },
+  "minimumReleaseAge": "3 days",
+  "platformCommit": "enabled"
 }
