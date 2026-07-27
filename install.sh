@@ -35,19 +35,17 @@ if [[ -f "$tool_dir/wepub$binary_ext" ]]; then
   exit 0
 fi
 
-# Download archive and checksum
+# Download archive
 archive="wepub-$target$archive_ext"
 base_url="https://github.com/iorate/wepub/releases/download/v$version"
 echo "Downloading $base_url/$archive"
 curl -fsSL "$base_url/$archive" -o "$RUNNER_TEMP/$archive"
-curl -fsSL "$base_url/$archive.sha256" -o "$RUNNER_TEMP/$archive.sha256"
 
-# Verify checksum
-if command -v sha256sum &>/dev/null; then
-  (cd "$RUNNER_TEMP" && sha256sum -c "$archive.sha256")
-else
-  (cd "$RUNNER_TEMP" && shasum -a 256 -c "$archive.sha256")
-fi
+# Verify build provenance
+gh attestation verify "$RUNNER_TEMP/$archive" \
+  --repo iorate/wepub \
+  --signer-workflow iorate/wepub/.github/workflows/release.yml
+echo "Verified the build provenance of $archive"
 
 # Extract binary into tool cache
 mkdir -p "$tool_dir"
