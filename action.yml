@@ -7,11 +7,11 @@ branding:
 
 inputs:
   version:
-    description: 'Version to install (e.g., "0.4.3", "v0.4.3", or "latest")'
+    description: 'Version to install (e.g., "1.0.1", "v1.0.1", or "latest")'
     default: latest
     required: false
   token:
-    description: GitHub token for API requests (avoids rate limiting when resolving "latest")
+    description: GitHub token for API requests (resolving "latest" and verifying build provenance)
     default: ${{ github.token }}
     required: false
 

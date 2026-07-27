@@ -81,12 +81,12 @@ jobs:
         id: install
         uses: ./
         with:
-          version: 0.4.3
+          version: 1.0.1
 
       - name: Verify install and output
         run: |
           wepub --version
-          if [[ $INSTALLED_VERSION != "0.4.3" ]]; then
+          if [[ $INSTALLED_VERSION != "1.0.1" ]]; then
             echo "unexpected output: $INSTALLED_VERSION"
             exit 1
           fi
@@ -96,7 +96,7 @@ jobs:
       - name: Re-run to exercise cache hit
         uses: ./
         with:
-          version: 0.4.3
+          version: 1.0.1
 
   version-inputs:
     runs-on: ubuntu-latest
@@ -117,22 +117,22 @@ jobs:
         id: exact
         uses: ./
         with:
-          version: 0.4.3
+          version: 1.0.1
 
       - name: Install a v-prefixed version
         id: vprefix
         uses: ./
         with:
-          version: v0.4.3
+          version: v1.0.1
 
       - name: Check version resolution
         run: |
           wepub --version
-          if [[ "$EXACT_VERSION" != "0.4.3" ]]; then
+          if [[ "$EXACT_VERSION" != "1.0.1" ]]; then
             echo "exact form failed"
             exit 1
           fi
-          if [[ "$VPREFIX_VERSION" != "0.4.3" ]]; then
+          if [[ "$VPREFIX_VERSION" != "1.0.1" ]]; then
             echo "v-prefix form failed"
             exit 1
           fi
@@ -150,3 +150,13 @@ jobs:
           fi
         env:
           INPUT_VERSION: not-a-version
+
+      - name: Assert a release without provenance fails
+        run: |
+          if bash install.sh; then
+            echo "expected failure"
+            exit 1
+          fi
+        env:
+          INPUT_VERSION: 1.0.0
+          GH_TOKEN: ${{ github.token }}
