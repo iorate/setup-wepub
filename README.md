@@ -1,5 +1,14 @@
 # setup-wepub
 
+> [!WARNING]
+> **This action is deprecated and cannot install wepub 1.0.2 or later.** wepub releases moved to the `wepub-v*` tag scheme, which this action cannot resolve: `version: latest` fails validation and explicit newer versions fail to download. Use [`iorate/wepub/setup`](https://github.com/iorate/wepub/tree/main/setup) instead:
+>
+> ```yaml
+> - uses: iorate/wepub/setup@v1
+> ```
+>
+> The new action has no `version` input; it installs the wepub version belonging to the ref it is pinned to (`@v1` for the latest release, `@v1.0.2` for an exact version). Pinning this action to wepub 1.0.1 or earlier keeps working.
+
 A GitHub Action that installs the [`wepub`](https://github.com/iorate/wepub) CLI for publishing browser extensions to the Chrome Web Store, Firefox Add-ons, and Edge Add-ons.
 
 It downloads the prebuilt binary from the wepub releases, verifies its build provenance attestation to ensure that it was built by the wepub release workflow on GitHub Actions, and adds it to the `PATH` so subsequent steps can call `wepub` directly. The binary is cached in the runner tool cache, so repeated runs of the same version skip the download.
